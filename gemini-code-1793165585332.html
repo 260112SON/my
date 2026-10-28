@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>네트워크관리사 2급 필기/실기 스마트 학습 플랫폼 (2022-2026 기출 탑재)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .active-tab { border-bottom: 3px solid #3b82f6; color: #1d4ed8; font-weight: 700; }
+        .terminal-bg { background-color: #0d1117; color: #3fb950; font-family: 'Courier New', Courier, monospace; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col font-sans">
+
+    <!-- Top Header -->
+    <header class="bg-slate-900 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-network-wired text-3xl text-blue-400"></i>
+                <div>
+                    <h1 class="text-xl font-bold">NA2-Study 마스터 플랫폼</h1>
+                    <p class="text-xs text-slate-300">네트워크관리사 2급 과년도 기출(2022~2026) 및 실기 시뮬레이터</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 mt-2 sm:mt-0">
+                <button onclick="exportRecords()" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-1.5 rounded transition"><i class="fa-solid fa-download mr-1"></i>기록 백업</button>
+                <button onclick="clearAllData()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded transition"><i class="fa-solid fa-rotate-left mr-1"></i>기록 초기화</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 flex space-x-6 overflow-x-auto">
+            <button onclick="switchTab('dashboard')" id="tab-dashboard" class="py-3.5 px-2 active-tab flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-chart-line"></i><span>학습 대시보드</span>
+            </button>
+            <button onclick="switchTab('theory')" id="tab-theory" class="py-3.5 px-2 text-slate-600 hover:text-blue-600 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-book-open"></i><span>핵심 이론 & 도구</span>
+            </button>
+            <button onclick="switchTab('quiz')" id="tab-quiz" class="py-3.5 px-2 text-slate-600 hover:text-blue-600 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-pen-to-square"></i><span>필기 기출 풀이</span>
+            </button>
+            <button onclick="switchTab('practical')" id="tab-practical" class="py-3.5 px-2 text-slate-600 hover:text-blue-600 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-terminal"></i><span>실기 시뮬레이터</span>
+            </button>
+            <button onclick="switchTab('wrong')" id="tab-wrong" class="py-3.5 px-2 text-slate-600 hover:text-blue-600 flex items-center space-x-2 whitespace-nowrap">
+                <i class="fa-solid fa-circle-exclamation text-amber-500"></i><span>오답노트 (<span id="wrong-badge">0</span>)</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- 1. Dashboard Tab -->
+        <section id="sec-dashboard" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-semibold uppercase">총 풀이 문항</p>
+                        <h3 id="dash-total" class="text-2xl font-bold text-slate-800">0개</h3>
+                    </div>
+                    <i class="fa-solid fa-clipboard-list text-blue-500 text-3xl"></i>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-semibold uppercase">전체 정답률</p>
+                        <h3 id="dash-accuracy" class="text-2xl font-bold text-emerald-600">0%</h3>
+                    </div>
+                    <i class="fa-solid fa-chart-pie text-emerald-500 text-3xl"></i>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-semibold uppercase">누적 오답 문항</p>
+                        <h3 id="dash-wrong" class="text-2xl font-bold text-amber-600">0개</h3>
+                    </div>
+                    <i class="fa-solid fa-file-circle-exclamation text-amber-500 text-3xl"></i>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-slate-500 font-semibold uppercase">집중 보완 과목</p>
+                        <h3 id="dash-weakness" class="text-lg font-bold text-indigo-600">데이터 미비</h3>
+                    </div>
+                    <i class="fa-solid fa-triangle-exclamation text-indigo-500 text-3xl"></i>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center"><i class="fa-solid fa-chart-radar mr-2 text-blue-600"></i>과목별 정답률 진단 (4개 과목)</h3>
+                    <div class="h-64 flex justify-center">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-700 mb-4 flex items-center"><i class="fa-solid fa-chart-bar mr-2 text-blue-600"></i>과목별 누적 문제 풀이량</h3>
+                    <div class="h-64 flex justify-center">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. Theory & Tools Tab -->
+        <section id="sec-theory" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+                <h2 class="text-xl font-bold text-slate-800 border-b pb-3"><i class="fa-solid fa-book-bookmark text-blue-600 mr-2"></i>네트워크관리사 2급 과목별 핵심 요약</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                        <h4 class="font-bold text-blue-900 mb-2"><i class="fa-solid fa-network-wired mr-1"></i> 1. TCP/IP</h4>
+                        <ul class="text-xs text-blue-800 space-y-1">
+                            <li>• <strong>IP 주소 및 서브네팅:</strong> IPv4 (32비트, Class A~E), IPv6 (128비트, 16진수)</li>
+                            <li>• <strong>주요 프로토콜:</strong> ARP(IP→MAC), RARP(MAC→IP), ICMP(오류보고/Ping), IGMP(멀티캐스트), SNMP(장비관리/UDP 161)</li>
+                            <li>• <strong>포트 번호:</strong> FTP(20,21), SSH(22), Telnet(23), SMTP(25), DNS(53), HTTP(80), HTTPS(443)</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-lg">
+                        <h4 class="font-bold text-emerald-900 mb-2"><i class="fa-solid fa-sitemap mr-1"></i> 2. 네트워크 일반</h4>
+                        <ul class="text-xs text-emerald-800 space-y-1">
+                            <li>• <strong>OSI 7 계층:</strong> 물리-데이터링크-네트워크-전송-세션-표현-응용</li>
+                            <li>• <strong>MAC 기술:</strong> CSMA/CD (이더넷 충돌감지), CSMA/CA (무선랜 충돌회피)</li>
+                            <li>• <strong>토폴로지:</strong> 스타형(중앙집중, 단일 장애점), 링형, 버스형, 메시형</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-purple-50 border border-purple-100 rounded-lg">
+                        <h4 class="font-bold text-purple-900 mb-2"><i class="fa-solid fa-server mr-1"></i> 3. NOS (운영체제)</h4>
+                        <ul class="text-xs text-purple-800 space-y-1">
+                            <li>• <strong>Windows Server:</strong> Active Directory, DNS SOA/A/PTR/CNAME/MX 레코드, IIS, FSRM</li>
+                            <li>• <strong>Linux 주요 명령어:</strong> chmod (권한 변경), chown (소유자 변경), lsattr/chattr (파일 속성 확인/설정), nohup (백그라운드)</li>
+                            <li>• <strong>Linux 설정 파일:</strong> /etc/hosts (로컬 DNS), /etc/resolv.conf (네임서버 주소), /etc/fstab (마운트)</li>
+                        </ul>
+                    </div>
+                    <div class="p-4 bg-amber-50 border border-amber-100 rounded-lg">
+                        <h4 class="font-bold text-amber-900 mb-2"><i class="fa-solid fa-hard-drive mr-1"></i> 4. 네트워크 운용기기</h4>
+                        <ul class="text-xs text-amber-800 space-y-1">
+                            <li>• <strong>장비 계층:</strong> 리피터/허브(L1), 스위치/브릿지(L2-MAC), 라우터/L3스위치(L3-IP), L4스위치(로드밸런싱)</li>
+                            <li>• <strong>RAID 구성:</strong> RAID 0 (스트라이핑/속도), RAID 1 (미러링/안전성), RAID 5 (패리티/3개 이상 디스크)</li>
+                            <li>• <strong>보안 및 기술:</strong> VLAN (브로드캐스트 분리), NAC (접근통제), NAT (사설/공인 IP 변환), PoE (통신선 전력 공급)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Interactive Subnet Calculator -->
+                <div class="bg-slate-50 p-5 rounded-xl border border-slate-300">
+                    <h3 class="font-bold text-slate-800 mb-3 flex items-center"><i class="fa-solid fa-calculator text-blue-600 mr-2"></i>실시간 IP 서브넷 계산기</h3>
+                    <div class="flex flex-wrap gap-3 items-center">
+                        <input type="text" id="calc-ip" value="192.168.100.128" placeholder="IP 주소 입력" class="p-2 border border-slate-300 rounded text-sm w-48">
+                        <span class="text-lg font-bold text-slate-500">/</span>
+                        <input type="number" id="calc-prefix" value="26" min="8" max="30" class="p-2 border border-slate-300 rounded text-sm w-20" placeholder="Prefix">
+                        <button onclick="calcSubnet()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-semibold transition">계산 실행</button>
+                    </div>
+                    <div id="calc-output" class="mt-4 p-4 bg-white border border-slate-200 rounded font-mono text-xs text-slate-700 space-y-1 hidden"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Quiz Examination Tab -->
+        <section id="sec-quiz" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <!-- Filter bar -->
+                <div class="flex flex-wrap justify-between items-center gap-3 border-b pb-4">
+                    <div class="flex flex-wrap gap-2">
+                        <select id="filter-subject" onchange="filterQuizData()" class="p-2 border border-slate-300 rounded text-xs font-semibold bg-slate-50">
+                            <option value="ALL">전체 과목 보기</option>
+                            <option value="TCP/IP">TCP/IP</option>
+                            <option value="네트워크 일반">네트워크 일반</option>
+                            <option value="NOS">NOS (운영체제)</option>
+                            <option value="네트워크 운용기기">네트워크 운용기기</option>
+                        </select>
+                        <select id="filter-exam" onchange="filterQuizData()" class="p-2 border border-slate-300 rounded text-xs font-semibold bg-slate-50">
+                            <option value="ALL">전체 회차 (2022~2026)</option>
+                            <option value="2026-02">2026년 2회 (2026.05.17)</option>
+                            <option value="2026-01">2026년 1회 (2026.02.01)</option>
+                            <option value="2025-04">2025년 4회 (2025.11.02)</option>
+                            <option value="2025-03">2025년 3회 (2025.08.24)</option>
+                            <option value="2024-01">2024년 1회 (2024.02.25)</option>
+                            <option value="2023-01">2023년 1회 (2023.02.26)</option>
+                            <option value="2022-01">2022년 1회 (2022.02.27)</option>
+                        </select>
+                    </div>
+                    <span id="quiz-count-info" class="text-xs font-bold bg-blue-100 text-blue-800 px-3 py-1 rounded-full">문제 1 / 10</span>
+                </div>
+
+                <!-- Quiz Main Screen -->
+                <div id="quiz-box" class="space-y-4 py-2">
+                    <!-- Dynamic Question Rendering -->
+                </div>
+
+                <!-- Controls -->
+                <div class="flex justify-between items-center border-t pt-4">
+                    <button onclick="navigateQuiz(-1)" id="btn-prev" class="px-4 py-2 bg-slate-200 text-slate-700 rounded text-xs font-bold hover:bg-slate-300 disabled:opacity-40">이전 문제</button>
+                    <button onclick="navigateQuiz(1)" id="btn-next" class="px-4 py-2 bg-blue-600 text-white rounded text-xs font-bold hover:bg-blue-700 disabled:opacity-40">다음 문제</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Practical Simulation Tab -->
+        <section id="sec-practical" class="hidden space-y-6">
+            <!-- Router CLI Simulator -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center"><i class="fa-solid fa-terminal text-blue-600 mr-2"></i>실기 1: 라우터(Router) CLI 인터페이스 설정</h2>
+                <div class="bg-blue-50 p-3 rounded border border-blue-200 text-xs text-blue-900 space-y-1">
+                    <p><strong>[실기 문제 미션]</strong></p>
+                    <p>1. 특권 관리자 모드(<code class="bg-white px-1">enable</code>)로 진입하세요.</p>
+                    <p>2. 전역 설정 모드(<code class="bg-white px-1">configure terminal</code>)로 진입하세요.</p>
+                    <p>3. FastEthernet 0/0 인터페이스(<code class="bg-white px-1">interface fastethernet 0/0</code>)로 이동하세요.</p>
+                    <p>4. IP 주소를 <code class="bg-white px-1 font-mono text-red-600">192.168.100.1 255.255.255.0</code>으로 설정하고 포트를 활성화(<code class="bg-white px-1">no shutdown</code>)하세요.</p>
+                </div>
+
+                <div class="terminal-bg p-4 rounded-lg h-56 overflow-y-auto font-mono text-xs space-y-1 shadow-inner" id="cli-screen">
+                    <div>Router> <span class="text-slate-500"># 명령어를 입력하세요. ('enable'부터 시작)</span></div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <span id="cli-prefix" class="font-mono text-xs font-bold bg-slate-200 px-3 py-2.5 rounded-l text-slate-700">Router></span>
+                    <input type="text" id="cli-input" onkeydown="onCliKeyDown(event)" class="flex-grow p-2 border border-slate-300 font-mono text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-r" placeholder="명령어 입력...">
+                    <button onclick="runCliCommand()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded text-xs font-bold">실행</button>
+                </div>
+            </div>
+
+            <!-- Cable Wiring Simulator -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <h2 class="text-lg font-bold text-slate-800 flex items-center"><i class="fa-solid fa-network-wired text-blue-600 mr-2"></i>실기 2: UTP 케이블 다이렉트(T568B) 8핀 제작</h2>
+                <p class="text-xs text-slate-600">아래 8개 슬롯에 T568B 표준 순서에 맞게 선 색상을 배치하세요.</p>
+
+                <div id="cable-slots" class="grid grid-cols-4 sm:grid-cols-8 gap-2 p-4 bg-slate-100 rounded-lg">
+                    <!-- Dynamic Slots -->
+                </div>
+
+                <div id="cable-palette" class="flex flex-wrap gap-2 justify-center p-3 bg-slate-200 rounded-lg">
+                    <!-- Palette Buttons -->
+                </div>
+
+                <div class="flex justify-end space-x-2 border-t pt-3">
+                    <button onclick="initCableGame()" class="px-3 py-1.5 bg-slate-500 text-white rounded text-xs">다시 맞추기</button>
+                    <button onclick="checkCableGame()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-xs font-bold">정답 확인</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Wrong Answer Review Tab -->
+        <section id="sec-wrong" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                <div class="flex justify-between items-center border-b pb-3">
+                    <h2 class="text-xl font-bold text-amber-700 flex items-center"><i class="fa-solid fa-box-archive mr-2"></i>오답 보관함 및 복습</h2>
+                    <button onclick="clearWrongList()" class="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 px-3 py-1.5 rounded font-semibold"><i class="fa-solid fa-trash mr-1"></i>오답 전체 비우기</button>
+                </div>
+
+                <div id="wrong-container" class="space-y-4">
+                    <!-- Dynamic Wrong Items -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 text-center text-xs py-4 border-t border-slate-800">
+        <p>© 2026 NA2-Study Platform | PDF 기반 네트워크관리사 2급 기출 통합 데이터베이스</p>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // PDF 내 기출문제 및 정답 정밀 수록 데이터베이스
+        const pdfQuizData = [
+            // 2022-01 회차
+            {
+                id: "2022-01-01",
+                exam: "2022-01",
+                subject: "TCP/IP",
+                question: "DNS에서 사용될 때 TTL(Time to Live)의 설명으로 올바른 것은?",
+                options: [
+                    "데이터가 DNS서버 존으로부터 나오기 전에 현재 남은 시간이다.",
+                    "데이터가 DNS서버 캐시로부터 나오기 전에 현재 남은 시간이다.",
+                    "패킷이 DNS서버 존으로부터 나오기 전에 현재 남은 시간이다.",
+                    "패킷이 DNS서버 네임서버 레코드로부터 나오기 전에 현재 남은 시간이다."
+                ],
+                answer: 1, // 2번 (0-index: 1)
+                explanation: "DNS TTL은 도메인 이름 정보가 DNS 서버 캐시(Cache)에 저장되어 유효하게 유지되는 시간을 의미합니다."
+            },
+            {
+                id: "2022-01-02",
+                exam: "2022-01",
+                subject: "TCP/IP",
+                question: "IPv4 Class 중에서 멀티캐스트(Multicast) 용도로 사용되는 것은?",
+                options: ["A Class", "B Class", "D Class", "E Class"],
+                answer: 2, // D Class
+                explanation: "Class A, B, C는 유니캐스트, Class D는 멀티캐스트(224.0.0.0 ~ 239.255.255.255), Class E는 연구/실험용입니다."
+            },
+            {
+                id: "2022-01-03",
+                exam: "2022-01",
+                subject: "TCP/IP",
+                question: "'255.255.255.224'인 서브넷에 최대 할당 가능한 호스트 수는?",
+                options: ["2개", "6개", "14개", "30개"],
+                answer: 3, // 30개
+                explanation: "224는 이진수로 11100000 이므로 호스트 비트는 5비트입니다. $2^5 - 2 = 30$개의 호스트 주소를 할당할 수 있습니다."
+            },
+            {
+                id: "2022-01-10",
+                exam: "2022-01",
+                subject: "TCP/IP",
+                question: "IP Address를 이용하여 물리적인 네트워크 주소(MAC Address)를 얻는데 사용되는 프로토콜은?",
+                options: ["DHCP", "RIP", "IP", "ARP"],
+                answer: 3, // ARP
+                explanation: "ARP(Address Resolution Protocol)는 논리적인 IP 주소를 물리적인 MAC 주소로 변환합니다. 반대로 RARP는 MAC→IP 변환입니다."
+            },
+            {
+                id: "2022-01-18",
+                exam: "2022-01",
+                subject: "네트워크 일반",
+                question: "OSI 7 Layer에서 Data Link 계층의 기능으로 옳지 않은 것은?",
+                options: ["전송 오류 제어기능", "Flow 제어기능", "Text의 압축, 암호기능", "Link의 관리기능"],
+                answer: 2, // Text 압축, 암호화
+                explanation: "텍스트 압축 및 암호화 기능은 OSI 7계층 중 표현 계층(Presentation Layer)의 역할입니다."
+            },
+            {
+                id: "2022-01-30",
+                exam: "2022-01",
+                subject: "NOS",
+                question: "Windows Server에서 DNS 서버 설정 후 도메인을 입력하면 해당 IP주소를 보여주는 명령어는?",
+                options: ["ls", "show", "nslookup", "pwd"],
+                answer: 2, // nslookup
+                explanation: "nslookup 도구를 사용하여 DNS 네임서버의 정방향/역방향 조회 동작을 테스트하고 IP주소를 조회합니다."
+            },
+            {
+                id: "2022-01-49",
+                exam: "2022-01",
+                subject: "네트워크 운용기기",
+                question: "물리적인 하나의 LAN을 논리적으로 여러 개로 나누어 효율적으로 네트워크를 관리하고 보안을 강화하는 기술은?",
+                options: ["NAC", "VLAN", "IPS", "IDS"],
+                answer: 1, // VLAN
+                explanation: "VLAN(Virtual Local Area Network)은 스위치에서 논리적으로 브로드캐스트 도메인을 분할하는 기술입니다."
+            },
+
+            // 2023-01 회차
+            {
+                id: "2023-01-08",
+                exam: "2023-01",
+                subject: "TCP/IP",
+                question: "C Class인 네트워크의 서브넷 마스크가 '255.255.255.192' 일 때 생성 가능한 서브넷의 개수는?",
+                options: ["2개", "4개", "192개", "1024개"],
+                answer: 1, // 4개
+                explanation: "192는 이진수로 11000000 입니다. 빌려온 서브넷 비트가 2비트이므로 $2^2 = 4$개의 서브넷이 생성됩니다."
+            },
+
+            // 2024-01 회차
+            {
+                id: "2024-01-14",
+                exam: "2024-01",
+                subject: "TCP/IP",
+                question: "IPv6 주소 'a184:0a01:0000:0000:cd8c:1000:317b:00ff'를 생략 축약 표현한 것으로 알맞은 것은?",
+                options: [
+                    "a184:a1::cd8c:1:317b:ff",
+                    "a184:a01::cd8c:1000:317b:ff",
+                    "a184:a01:0:0:cd8c:10:317b:0ff",
+                    "a184:a01:cd8c:1000:317b:ff"
+                ],
+                answer: 1, // a184:a01::cd8c:1000:317b:ff
+                explanation: "IPv6 축약 규칙: 각 블록 선두의 0은 생략(0a01→a01, 00ff→ff), 연속된 0000 블록은 단 한 번 '::'로 축약합니다."
+            },
+
+            // 2025-03/04 회차
+            {
+                id: "2025-04-10",
+                exam: "2025-04",
+                subject: "TCP/IP",
+                question: "사설 IP주소를 공인 IP주소로 변환하여 IP 절약 및 내부망 보안을 향상시키는 기술은?",
+                options: ["DHCP", "BOOTP", "ARP", "NAT"],
+                answer: 3, // NAT
+                explanation: "NAT(Network Address Translation)는 사설 IP를 공인 IP로 변환하여 주소 고갈을 방지하고 내부망을 보호합니다."
+            },
+
+            // 2026-01 / 2026-02 최신 회차
+            {
+                id: "2026-01-01",
+                exam: "2026-01",
+                subject: "TCP/IP",
+                question: "DNS 서버가 없고 인터넷이 없는 환경에서 로컬 컴퓨터의 호스트 이름과 IP 주소를 매핑해 주는 파일은?",
+                options: ["/etc/deny", "/etc/hosts", "/etc/allow", "/etc/services"],
+                answer: 1, // /etc/hosts
+                explanation: "hosts 파일은 DNS 서버에 질의하기 전 가장 먼저 조회하는 로컬 도메인-IP 매핑 파일입니다."
+            },
+            {
+                id: "2026-02-17",
+                exam: "2026-02",
+                subject: "TCP/IP",
+                question: "TCP/IP 환경에서 전자우편(E-Mail)을 전송할 때 사용하는 SMTP의 기본 포트 번호는?",
+                options: ["25번", "110번", "23번", "443번"],
+                answer: 0, // 25번
+                explanation: "SMTP(Simple Mail Transfer Protocol)는 25번 포트를 사용하여 메일 서버 간 전자우편을 전송합니다."
+            },
+            {
+                id: "2026-02-25",
+                exam: "2026-02",
+                subject: "네트워크 일반",
+                question: "사설 IP 주소와 공인 IP 주소를 변환하여 공인 IP 주소 사용을 효율화하는 주요 기술은?",
+                options: ["NAT", "포트 포워딩", "VPN", "MAC 필터링"],
+                answer: 0, // NAT
+                explanation: "NAT는 내부 사설 IP와 외부 공인 IP 간 변환을 수행하는 대표적 주소 변환 프로토콜입니다."
+            },
+            {
+                id: "2026-02-46",
+                exam: "2026-02",
+                subject: "네트워크 운용기기",
+                question: "RAID 방식 중 모든 데이터를 다른 디스크에 동일하게 중복 복사(Mirroring)하여 최고의 고장대비 능력을 갖춘 구성은?",
+                options: ["RAID 0", "RAID 1", "RAID 3", "RAID 5"],
+                answer: 1, // RAID 1
+                explanation: "RAID 1은 미러링(Mirroring) 방식으로 데이터 안전성이 극대화됩니다."
+            }
+        ];
+
+        // State & LocalStorage
+        let filteredQuiz = [...pdfQuizData];
+        let currentQuizIdx = 0;
+        let records = JSON.parse(localStorage.getItem('na2_master_records')) || {
+            solvedCount: 0,
+            correctCount: 0,
+            subjectStats: {
+                "TCP/IP": { total: 0, correct: 0 },
+                "네트워크 일반": { total: 0, correct: 0 },
+                "NOS": { total: 0, correct: 0 },
+                "네트워크 운용기기": { total: 0, correct: 0 }
+            },
+            wrongIds: []
+        };
+
+        // Charts Global
+        let radarChartObj = null;
+        let barChartObj = null;
+
+        // Init
+        window.onload = function() {
+            renderQuizScreen();
+            updateDashboard();
+            initCableGame();
+            updateWrongBadge();
+        };
+
+        function switchTab(tabName) {
+            ['dashboard', 'theory', 'quiz', 'practical', 'wrong'].forEach(t => {
+                document.getElementById(`sec-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('active-tab');
+            });
+            document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('active-tab');
+
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'wrong') renderWrongScreen();
+        }
+
+        // Quiz Logic
+        function filterQuizData() {
+            const subj = document.getElementById('filter-subject').value;
+            const ex = document.getElementById('filter-exam').value;
+
+            filteredQuiz = pdfQuizData.filter(item => {
+                const matchSubj = (subj === 'ALL' || item.subject === subj);
+                const matchEx = (ex === 'ALL' || item.exam === ex);
+                return matchSubj && matchEx;
+            });
+
+            currentQuizIdx = 0;
+            renderQuizScreen();
+        }
+
+        function renderQuizScreen() {
+            const container = document.getElementById('quiz-box');
+            if (filteredQuiz.length === 0) {
+                container.innerHTML = `<p class="text-center py-8 text-slate-500 text-sm">조건에 일치하는 기출문항이 없습니다.</p>`;
+                document.getElementById('quiz-count-info').innerText = `0 / 0`;
+                document.getElementById('btn-prev').disabled = true;
+                document.getElementById('btn-next').disabled = true;
+                return;
+            }
+
+            const q = filteredQuiz[currentQuizIdx];
+            document.getElementById('quiz-count-info').innerText = `문항 ${currentQuizIdx + 1} / ${filteredQuiz.length} (${q.exam})`;
+
+            let html = `
+                <div class="mb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs bg-blue-100 text-blue-800 font-bold px-2.5 py-0.5 rounded border border-blue-200">${q.subject}</span>
+                        <span class="text-xs text-slate-400 font-mono">[${q.id}]</span>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-800 mt-2">${currentQuizIdx + 1}. ${q.question}</h3>
+                </div>
+                <div class="space-y-2 mb-4">
+            `;
+
+            q.options.forEach((opt, idx) => {
+                html += `
+                    <label onclick="checkQuizAnswer(${idx})" class="flex items-center p-3 border border-slate-200 rounded-lg hover:bg-blue-50 cursor-pointer transition text-xs sm:text-sm">
+                        <input type="radio" name="quiz-opt" value="${idx}" class="mr-3 text-blue-600">
+                        <span>${idx + 1}) ${opt}</span>
+                    </label>
+                `;
+            });
+
+            html += `</div><div id="quiz-result-msg" class="hidden p-4 rounded-lg text-xs space-y-1"></div>`;
+            container.innerHTML = html;
+
+            document.getElementById('btn-prev').disabled = (currentQuizIdx === 0);
+            document.getElementById('btn-next').disabled = (currentQuizIdx === filteredQuiz.length - 1);
+        }
+
+        function checkQuizAnswer(selectedIdx) {
+            const q = filteredQuiz[currentQuizIdx];
+            const msgBox = document.getElementById('quiz-result-msg');
+            msgBox.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-900', 'bg-red-50', 'text-red-900');
+
+            const isCorrect = (selectedIdx === q.answer);
+
+            // Record update
+            records.solvedCount++;
+            if (!records.subjectStats[q.subject]) {
+                records.subjectStats[q.subject] = { total: 0, correct: 0 };
+            }
+            records.subjectStats[q.subject].total++;
+
+            if (isCorrect) {
+                records.correctCount++;
+                records.subjectStats[q.subject].correct++;
+                msgBox.classList.add('bg-emerald-50', 'text-emerald-900', 'border', 'border-emerald-200');
+                msgBox.innerHTML = `<strong><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> 정답입니다!</strong><p class="mt-1">${q.explanation}</p>`;
+            } else {
+                if (!records.wrongIds.includes(q.id)) {
+                    records.wrongIds.push(q.id);
+                }
+                msgBox.classList.add('bg-red-50', 'text-red-900', 'border', 'border-red-200');
+                msgBox.innerHTML = `<strong><i class="fa-solid fa-circle-xmark text-red-600 mr-1"></i> 오답입니다! (정답: ${q.answer + 1}번)</strong><p class="mt-1">${q.explanation}</p>`;
+            }
+
+            saveRecords();
+            updateWrongBadge();
+        }
+
+        function navigateQuiz(dir) {
+            if (currentQuizIdx + dir >= 0 && currentQuizIdx + dir < filteredQuiz.length) {
+                currentQuizIdx += dir;
+                renderQuizScreen();
+            }
+        }
+
+        // Subnet Calculator
+        function calcSubnet() {
+            const ip = document.getElementById('calc-ip').value.trim();
+            const prefix = parseInt(document.getElementById('calc-prefix').value);
+            const out = document.getElementById('calc-output');
+
+            if (!ip || isNaN(prefix)) return;
+
+            const maskBits = "".padStart(prefix, '1').padEnd(32, '0');
+            const maskArr = [
+                parseInt(maskBits.substring(0,8), 2),
+                parseInt(maskBits.substring(8,16), 2),
+                parseInt(maskBits.substring(16,24), 2),
+                parseInt(maskBits.substring(24,32), 2)
+            ];
+            const subnetMask = maskArr.join('.');
+            const totalHosts = Math.pow(2, 32 - prefix);
+            const usableHosts = totalHosts > 2 ? totalHosts - 2 : 0;
+
+            out.classList.remove('hidden');
+            out.innerHTML = `
+                <div><strong>• 서브넷 마스크:</strong> ${subnetMask} (/${prefix})</div>
+                <div><strong>• 총 IP 수:</strong> ${totalHosts} 개</div>
+                <div><strong>• 실제 할당 가능 호스트 수:</strong> ${usableHosts} 개</div>
+            `;
+        }
+
+        // CLI Simulator State
+        let cliMode = 'USER'; // USER, PRIV, CONFIG, INT
+        function onCliKeyDown(e) { if (e.key === 'Enter') runCliCommand(); }
+
+        function runCliCommand() {
+            const input = document.getElementById('cli-input');
+            const cmd = input.value.trim().toLowerCase();
+            const screen = document.getElementById('cli-screen');
+            const prefix = document.getElementById('cli-prefix');
+            if (!cmd) return;
+
+            let prompt = "Router>";
+            if (cliMode === 'PRIV') prompt = "Router#";
+            if (cliMode === 'CONFIG') prompt = "Router(config)#";
+            if (cliMode === 'INT') prompt = "Router(config-if)#";
+
+            screen.innerHTML += `<div>${prompt} ${cmd}</div>`;
+
+            if (cliMode === 'USER' && cmd === 'enable') {
+                cliMode = 'PRIV';
+                prefix.innerText = "Router#";
+            } else if (cliMode === 'PRIV' && cmd === 'configure terminal') {
+                cliMode = 'CONFIG';
+                prefix.innerText = "Router(config)#";
+            } else if (cliMode === 'CONFIG' && (cmd === 'interface fastethernet 0/0' || cmd === 'int fa0/0')) {
+                cliMode = 'INT';
+                prefix.innerText = "Router(config-if)#";
+            } else if (cliMode === 'INT' && cmd.startsWith('ip address 192.168.100.1 255.255.255.0')) {
+                screen.innerHTML += `<div class="text-emerald-400">[OK] FastEthernet 0/0 IP가 성공적으로 등록되었습니다.</div>`;
+            } else if (cliMode === 'INT' && cmd === 'no shutdown') {
+                screen.innerHTML += `<div class="text-emerald-400 font-bold">[SUCCESS] %LINK-5-CHANGED: Interface FastEthernet0/0, changed state to up! (미션 통과)</div>`;
+            } else {
+                screen.innerHTML += `<div class="text-red-400">% Invalid command or error syntax.</div>`;
+            }
+
+            input.value = '';
+            screen.scrollTop = screen.scrollHeight;
+        }
+
+        // Cable Simulator
+        const cableColors = ["흰주", "주황", "흰초", "파랑", "흰파", "초록", "흰갈", "갈색"];
+        const correctT568B = ["흰주", "주황", "흰초", "파랑", "흰파", "초록", "흰갈", "갈색"];
+        let userCable = Array(8).fill(null);
+
+        function initCableGame() {
+            userCable = Array(8).fill(null);
+            const slots = document.getElementById('cable-slots');
+            const palette = document.getElementById('cable-palette');
+            slots.innerHTML = '';
+            palette.innerHTML = '';
+
+            for (let i = 0; i < 8; i++) {
+                slots.innerHTML += `<div onclick="removePin(${i})" class="h-14 border-2 border-dashed border-slate-300 bg-white rounded flex items-center justify-center font-bold text-xs cursor-pointer hover:border-blue-400" id="slot-${i}">${i+1}번</div>`;
+            }
+
+            cableColors.forEach(c => {
+                palette.innerHTML += `<button onclick="addPin('${c}')" class="px-2.5 py-1 bg-white border border-slate-300 rounded text-xs font-semibold hover:bg-blue-50 shadow-sm">${c}</button>`;
+            });
+        }
+
+        function addPin(color) {
+            const emptyIdx = userCable.findIndex(v => v === null);
+            if (emptyIdx !== -1) {
+                userCable[emptyIdx] = color;
+                const slot = document.getElementById(`slot-${emptyIdx}`);
+                slot.innerText = color;
+                slot.classList.add('bg-blue-100', 'border-blue-500');
+            }
+        }
+
+        function removePin(idx) {
+            userCable[idx] = null;
+            const slot = document.getElementById(`slot-${idx}`);
+            slot.innerText = `${idx + 1}번`;
+            slot.classList.remove('bg-blue-100', 'border-blue-500');
+        }
+
+        function checkCableGame() {
+            const isCorrect = userCable.every((c, i) => c === correctT568B[i]);
+            if (isCorrect) {
+                alert("축하합니다! T568B 규격(흰주-주황-흰초-파랑-흰파-초록-흰갈-갈색) 배열 제작에 성공하셨습니다.");
+            } else {
+                alert("배열 오류입니다! 올바른 순서: 흰주 - 주황 - 흰초 - 파랑 - 흰파 - 초록 - 흰갈 - 갈색");
+            }
+        }
+
+        // Wrong Review
+        function renderWrongScreen() {
+            const container = document.getElementById('wrong-container');
+            if (records.wrongIds.length === 0) {
+                container.innerHTML = `<p class="text-center py-8 text-slate-500 text-sm">보관된 오답 문항이 없습니다. 기출문제를 풀어보세요.</p>`;
+                return;
+            }
+
+            let html = '';
+            records.wrongIds.forEach(id => {
+                const q = pdfQuizData.find(item => item.id === id);
+                if (q) {
+                    html += `
+                        <div class="p-4 border border-red-200 rounded-lg bg-red-50/40 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs bg-red-100 text-red-800 font-bold px-2 py-0.5 rounded">${q.subject} (${q.exam})</span>
+                                <button onclick="deleteWrongItem('${q.id}')" class="text-xs text-slate-400 hover:text-red-600"><i class="fa-solid fa-trash mr-1"></i>삭제</button>
+                            </div>
+                            <p class="font-bold text-sm text-slate-800">${q.question}</p>
+                            <div class="bg-white p-2.5 rounded border border-slate-200 text-xs text-slate-700">
+                                <strong>정답:</strong> ${q.answer + 1}) ${q.options[q.answer]}
+                            </div>
+                            <p class="text-xs text-slate-600"><strong>해설:</strong> ${q.explanation}</p>
+                        </div>
+                    `;
+                }
+            });
+            container.innerHTML = html;
+        }
+
+        function deleteWrongItem(id) {
+            records.wrongIds = records.wrongIds.filter(wId => wId !== id);
+            saveRecords();
+            renderWrongScreen();
+            updateWrongBadge();
+        }
+
+        function clearWrongList() {
+            records.wrongIds = [];
+            saveRecords();
+            renderWrongScreen();
+            updateWrongBadge();
+        }
+
+        // Analytics Dashboard
+        function updateDashboard() {
+            document.getElementById('dash-total').innerText = `${records.solvedCount}개`;
+            const acc = records.solvedCount > 0 ? Math.round((records.correctCount / records.solvedCount) * 100) : 0;
+            document.getElementById('dash-accuracy').innerText = `${acc}%`;
+            document.getElementById('dash-wrong').innerText = `${records.wrongIds.length}개`;
+
+            let weak = "데이터 미비";
+            let minRate = 101;
+            Object.keys(records.subjectStats).forEach(s => {
+                const stat = records.subjectStats[s];
+                if (stat.total > 0) {
+                    const rate = (stat.correct / stat.total) * 100;
+                    if (rate < minRate) { minRate = rate; weak = s; }
+                }
+            });
+            document.getElementById('dash-weakness').innerText = weak;
+
+            renderCharts();
+        }
+
+        function renderCharts() {
+            const subjects = Object.keys(records.subjectStats);
+            const accuracyRates = subjects.map(s => {
+                const stat = records.subjectStats[s];
+                return stat.total > 0 ? Math.round((stat.correct / stat.total) * 100) : 0;
+            });
+
+            // Radar Chart
+            const ctxR = document.getElementById('radarChart').getContext('2d');
+            if (radarChartObj) radarChartObj.destroy();
+            radarChartObj = new Chart(ctxR, {
+                type: 'radar',
+                data: {
+                    labels: subjects,
+                    datasets: [{
+                        label: '과목별 정답률 (%)',
+                        data: accuracyRates,
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgb(59, 130, 246)',
+                        pointBackgroundColor: 'rgb(59, 130, 246)'
+                    }]
+                },
+                options: { scales: { r: { min: 0, max: 100 } }, responsive: true, maintainAspectRatio: false }
+            });
+
+            // Bar Chart
+            const ctxB = document.getElementById('barChart').getContext('2d');
+            if (barChartObj) barChartObj.destroy();
+            barChartObj = new Chart(ctxB, {
+                type: 'bar',
+                data: {
+                    labels: subjects,
+                    datasets: [{
+                        label: '풀이 문항 수',
+                        data: subjects.map(s => records.subjectStats[s].total),
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)'
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        function updateWrongBadge() {
+            document.getElementById('wrong-badge').innerText = records.wrongIds.length;
+        }
+
+        function saveRecords() {
+            localStorage.setItem('na2_master_records', JSON.stringify(records));
+        }
+
+        function clearAllData() {
+            if (confirm("모든 학습 레코드 및 오답노트가 초기화됩니다.")) {
+                localStorage.removeItem('na2_master_records');
+                location.reload();
+            }
+        }
+
+        function exportRecords() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(records));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", "na2_learning_records.json");
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+    </script>
+</body>
+</html>
